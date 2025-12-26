@@ -55,9 +55,7 @@
         .section-title { font-size: 12px; color: var(--brand); text-transform: uppercase; font-weight: 800; margin-bottom: 15px; border-left: 3px solid var(--brand); padding-left: 8px; }
         .input-group { margin-bottom: 18px; }
         label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; color: #444; }
-        input[type="text"], textarea { width: 100%; padding: 11px; border: 1px solid #ced4da; border-radius: 8px; font-size: 14px; box-sizing: border-box; background: #f9f9f9; font-family: var(--news-font); }
-        input:focus { outline: none; border-color: var(--brand); background: white; }
-
+        
         .slider-card { background: #f8f9fa; padding: 15px; border-radius: 10px; border: 1px solid #eee; }
         .slider { -webkit-appearance: none; width: 100%; height: 5px; background: #dfe3e8; border-radius: 10px; outline: none; margin: 10px 0; }
         .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; background: var(--brand); border-radius: 50%; cursor: pointer; border: 3px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
@@ -103,14 +101,15 @@
         #view-img { position: relative; transform-origin: center; }
         .divider-line { width: 95%; height: 2px; background: var(--brand); margin: 15px 0; display: none; }
         .text-wrap { flex-grow: 1; display: flex; align-items: center; justify-content: center; padding: 10px; text-align: center; overflow: hidden; width: 100%; }
-        .dyn-text { font-weight: 700; color: #000; width: 100%; word-wrap: break-word; letter-spacing: -0.5px; }
+        .dyn-text { font-weight: 700; color: #000; width: 100%; word-wrap: break-word; letter-spacing: -0.5px; outline: none; border: 1px dashed transparent; font-size: 32px; }
+        .dyn-text:focus { border-color: #ccc; background: rgba(0,0,0,0.02); }
 
         .footer-container { 
             position: absolute; bottom: 0; width: 100%; height: 75px; 
             display: flex; justify-content: space-between; align-items: center; 
             padding: 0 45px; box-sizing: border-box; z-index: 5; 
         }
-        .footer-left, .footer-right { color: white; font-weight: 700; font-size: 19px; width: 35%; text-align: center; line-height: 1.2; }
+        .footer-left, .footer-right { color: white; font-weight: 700; font-size: 19px; width: 35%; text-align: center; line-height: 1.2; outline: none; }
 
         .btn-stack { padding: 20px; background: white; border-top: 1px solid #eee; display: flex; gap: 10px; }
         .btn { flex: 1; padding: 10px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 13px; }
@@ -118,43 +117,84 @@
         .btn-reset { background: #f0f2f5; color: #444; }
         .btn:active { transform: scale(0.98); }
 
-        /* Mobile Responsiveness */
+        [contenteditable="true"] { pointer-events: auto !important; cursor: text; }
+
+        /* Mobile Responsiveness Updates */
         @media (max-width: 900px) {
-            body { flex-direction: column; overflow-y: auto; height: auto; }
-            .sidebar { width: 100%; height: auto; order: 2; box-shadow: 0 -4px 12px rgba(0,0,0,0.1); }
-            .preview-pane { 
-                width: 100%; 
-                height: 60vh; 
-                min-height: 400px;
-                order: 1; 
-                position: sticky; 
-                top: 0; 
-                background: #2d3436; 
-                z-index: 30;
-                padding: 10px;
-                box-sizing: border-box;
+            body { flex-direction: column; overflow: hidden; height: 100vh; }
+            
+            /* Fixed Header for Mobile */
+            .brand-header { 
+                position: fixed; top: 0; left: 0; right: 0; height: 60px; 
+                background: white; z-index: 100; display: flex; align-items: center; 
+                justify-content: space-between; padding: 0 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             }
-            #scale-wrapper { transform: scale(0.4); } /* Managed by JS */
-            .brand-header { padding: 10px; }
-            .brand-header img { width: 150px !important; }
-            .btn-stack { position: sticky; bottom: 0; z-index: 40; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+            .brand-header img { width: 120px !important; margin: 0; }
+            .brand-header p { display: none; }
+
+            /* Horizontal History + Download in Header */
+            .sidebar .history-controls { display: none; }
+            .mobile-header-controls {
+                display: flex !important; align-items: center; gap: 8px;
+            }
+            .mobile-header-controls .btn-hist { padding: 6px; width: 35px; height: 35px; min-width: 35px; flex: none; border-radius: 50%; }
+            .mobile-header-controls .btn-hist span { display: none; }
+            .mobile-header-controls .btn-save-mini { 
+                background: var(--brand); color: white; border: none; border-radius: 50%; 
+                width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;
+                cursor: pointer;
+            }
+            .mobile-header-controls svg { width: 18px; height: 18px; fill: currentColor; }
+
+            /* Sticky Preview Panel */
+            .preview-pane { 
+                position: fixed; top: 60px; left: 0; right: 0; height: 40vh; 
+                background: #2d3436; z-index: 90; padding: 0; 
+                overflow: hidden; /* Prevents preview from scrolling */
+            }
+            #scale-wrapper { transform: scale(0.35); }
+
+            /* Scrollable Sidebar/Editor Area */
+            .sidebar { 
+                position: fixed; top: calc(40vh + 60px); bottom: 0; left: 0; right: 0; 
+                width: 100%; height: auto; overflow-y: auto; background: white; 
+                z-index: 80; display: block;
+            }
+            .tab-content { overflow-y: visible; padding-bottom: 20px; }
+
+            /* Hide Bottom Buttons */
+            .btn-stack { display: none !important; }
         }
+
+        .mobile-header-controls { display: none; }
     </style>
 </head>
 <body>
 
 <div class="sidebar">
     <div class="brand-header">
-        <img src="logo.jpg" style="width: 90%;">
+        <img src="images/logo.jpg" style="width:90%";>
         <p>News Poster Editor</p>
+        
+        <div class="mobile-header-controls">
+            <button class="btn-hist undo-btn-shared" onclick="undo()" disabled>
+                <svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
+            </button>
+            <button class="btn-hist redo-btn-shared" onclick="redo()" disabled>
+                <svg viewBox="0 0 24 24"><path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg>
+            </button>
+            <button class="btn-save-mini" onclick="saveAsImage()">
+                <svg viewBox="0 0 24 24" fill="white"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            </button>
+        </div>
     </div>
 
     <div class="history-controls">
-        <button class="btn-hist" id="undo-btn" onclick="undo()" disabled title="Undo">
+        <button class="btn-hist undo-btn-shared" onclick="undo()" disabled title="Undo">
             <svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
             UNDO
         </button>
-        <button class="btn-hist" id="redo-btn" onclick="redo()" disabled title="Redo">
+        <button class="btn-hist redo-btn-shared" onclick="redo()" disabled title="Redo">
             <svg viewBox="0 0 24 24"><path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg>
             REDO
         </button>
@@ -187,41 +227,14 @@
                 <input type="range" id="in-crop" class="slider" min="0" max="45" value="0" oninput="adjustImage()" onchange="saveHistory()">
                 <label>Photo Zoom</label>
                 <input type="range" id="in-zoom" class="slider" min="0.5" max="3" step="0.05" value="1" oninput="adjustImage()" onchange="saveHistory()">
-                <p style="font-size:11px; color:#888; margin:5px 0 0 0;">💡 Drag the photo in preview to reposition</p>
             </div>
         </div>
 
         <div id="tab-content" class="tab-pane">
-            <div class="section-title">Metadata</div>
-            <div class="input-group">
-                <label>Location (இடம்)</label>
-                <input type="text" id="in-loc" value="சென்னை" oninput="update()" onblur="saveHistory()">
-            </div>
-            <div class="input-group">
-                <label>Date (தேதி)</label>
-                <input type="text" id="in-date" value="" oninput="update()" onblur="saveHistory()">
-            </div>
-
-            <div class="section-title">News Body</div>
-            <div class="input-group">
-                <label>Headline/Detail (செய்தி விவரம்)</label>
-                <textarea id="in-content" oninput="update()" onblur="saveHistory()" rows="5">உங்கள் செய்தியை இங்கே பதிவிடவும்...</textarea>
-            </div>
+            <div class="section-title">Visual Tweaks</div>
             <div class="input-group slider-card">
                 <label>Line Height (வரி இடைவெளி)</label>
                 <input type="range" id="in-lineheight" class="slider" min="1" max="2.5" step="0.1" value="1.4" oninput="update()" onchange="saveHistory()">
-            </div>
-
-            <div class="section-title">Reporter Info</div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <div class="input-group">
-                    <label>Designation</label>
-                    <input type="text" id="in-desig" value="செய்தியாளர்" oninput="update()" onblur="saveHistory()">
-                </div>
-                <div class="input-group">
-                    <label>Name</label>
-                    <input type="text" id="in-name" value="பெயர்" oninput="update()" onblur="saveHistory()">
-                </div>
             </div>
         </div>
     </div>
@@ -244,11 +257,11 @@
             <div class="meta-bar">
                 <div class="meta-item">
                     <svg class="meta-icon" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                    <span id="view-loc">சென்னை</span>
+                    <span id="view-loc" contenteditable="true">சென்னை</span>
                 </div>
                 <div class="meta-item">
                     <svg class="meta-icon" viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
-                    <span id="view-date"></span>
+                    <span id="view-date" contenteditable="true"></span>
                 </div>
             </div>
             <div class="blue-line"></div>
@@ -260,13 +273,13 @@
                 </div>
                 <div class="divider-line" id="red-line"></div>
                 <div class="text-wrap" id="text-wrap-div">
-                    <div class="dyn-text" id="view-text"></div>
+                    <div class="dyn-text" id="view-text" contenteditable="true">உங்கள் செய்தியை இங்கே பதிவிடவும்...</div>
                 </div>
             </div>
 
             <div class="footer-container">
-                <div class="footer-left" id="view-desig"></div>
-                <div class="footer-right" id="view-name"></div>
+                <div class="footer-left" id="view-desig" contenteditable="true">செய்தியாளர்</div>
+                <div class="footer-right" id="view-name" contenteditable="true">பெயர்</div>
             </div>
         </div>
     </div>
@@ -284,7 +297,7 @@
         const d = String(now.getDate()).padStart(2, '0');
         const m = String(now.getMonth() + 1).padStart(2, '0');
         const y = now.getFullYear();
-        document.getElementById('in-date').value = `${d}.${m}.${y}`;
+        document.getElementById('view-date').innerText = `${d}.${m}.${y}`;
         update();
         saveHistory();
         responsivePreview();
@@ -292,11 +305,11 @@
 
     function getState() {
         return JSON.stringify({
-            loc: document.getElementById('in-loc').value,
-            date: document.getElementById('in-date').value,
-            content: document.getElementById('in-content').value,
-            desig: document.getElementById('in-desig').value,
-            name: document.getElementById('in-name').value,
+            loc: document.getElementById('view-loc').innerText,
+            date: document.getElementById('view-date').innerText,
+            content: document.getElementById('view-text').innerText,
+            desig: document.getElementById('view-desig').innerText,
+            name: document.getElementById('view-name').innerText,
             lh: document.getElementById('in-lineheight').value,
             w: document.getElementById('in-width').value,
             h: document.getElementById('in-height').value,
@@ -336,11 +349,11 @@
 
     function applyState(stateStr) {
         const s = JSON.parse(stateStr);
-        document.getElementById('in-loc').value = s.loc;
-        document.getElementById('in-date').value = s.date;
-        document.getElementById('in-content').value = s.content;
-        document.getElementById('in-desig').value = s.desig;
-        document.getElementById('in-name').value = s.name;
+        document.getElementById('view-loc').innerText = s.loc;
+        document.getElementById('view-date').innerText = s.date;
+        document.getElementById('view-text').innerText = s.content;
+        document.getElementById('view-desig').innerText = s.desig;
+        document.getElementById('view-name').innerText = s.name;
         document.getElementById('in-lineheight').value = s.lh;
         document.getElementById('in-width').value = s.w;
         document.getElementById('in-height').value = s.h;
@@ -362,8 +375,10 @@
     }
 
     function updateHistoryButtons() {
-        document.getElementById('undo-btn').disabled = historyStack.length <= 1;
-        document.getElementById('redo-btn').disabled = redoStack.length === 0;
+        const undoBtns = document.querySelectorAll('.undo-btn-shared');
+        const redoBtns = document.querySelectorAll('.redo-btn-shared');
+        undoBtns.forEach(b => b.disabled = historyStack.length <= 1);
+        redoBtns.forEach(b => b.disabled = redoStack.length === 0);
     }
 
     function openTab(evt, tabName) {
@@ -413,6 +428,7 @@
     let isDragging = false, startX, startY;
     
     const startDrag = (e) => {
+        if(e.target.contentEditable === "true") return; 
         isDragging = true;
         const c = e.touches ? e.touches[0] : e;
         startX = c.clientX - posX; startY = c.clientY - posY;
@@ -444,11 +460,6 @@
     }
 
     function update() {
-        document.getElementById('view-loc').innerText = document.getElementById('in-loc').value;
-        document.getElementById('view-date').innerText = document.getElementById('in-date').value;
-        document.getElementById('view-text').innerText = document.getElementById('in-content').value;
-        document.getElementById('view-desig').innerText = document.getElementById('in-desig').value;
-        document.getElementById('view-name').innerText = document.getElementById('in-name').value;
         document.getElementById('view-text').style.lineHeight = document.getElementById('in-lineheight').value;
         autoSizeText();
     }
@@ -456,8 +467,10 @@
     function autoSizeText() {
         const textEl = document.getElementById('view-text');
         const wrapEl = document.getElementById('text-wrap-div');
-        let fontSize = 32;
+        let fontSize = 32; 
         textEl.style.fontSize = fontSize + "px";
+        textEl.style.fontWeight = "700";
+
         while (textEl.scrollHeight > wrapEl.clientHeight && fontSize > 14) {
             fontSize--;
             textEl.style.fontSize = fontSize + "px";
@@ -484,6 +497,18 @@
         canvasWrapper.style.transform = originalTransform;
         btn.innerText = "DOWNLOAD POSTER";
     }
+
+    document.querySelectorAll('[contenteditable="true"]').forEach(el => {
+        el.addEventListener('blur', () => saveHistory());
+        el.addEventListener('input', () => {
+            if(el.id === 'view-text') autoSizeText();
+        });
+        el.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const text = e.clipboardData.getData('text/plain');
+            document.execCommand('insertText', false, text);
+        });
+    });
 </script>
 </body>
 </html>
