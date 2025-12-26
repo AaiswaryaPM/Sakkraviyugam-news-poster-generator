@@ -61,7 +61,7 @@
         .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; background: var(--brand); border-radius: 50%; cursor: pointer; border: 3px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
         /* Preview Area */
-        .preview-pane { flex-grow: 1; display: flex; justify-content: center; align-items: center; background: #cbd5e0; padding: 20px; position: relative; overflow: hidden; }
+        .preview-pane { flex-grow: 1; display: flex; justify-content: center; align-items: center; background: #cbd5e0; padding: 20px; position: relative; overflow: hidden; touch-action: none; }
         #scale-wrapper { transform-origin: center; transition: transform 0.1s ease; will-change: transform; }
         
         #poster-canvas {
@@ -129,7 +129,7 @@
                 background: white; z-index: 100; display: flex; align-items: center; 
                 justify-content: space-between; padding: 0 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             }
-            .brand-header img { width: 120px !important; margin: 0; }
+            .brand-header img { width: 140px !important; margin: 0; }
             .brand-header p { display: none; }
 
             /* Horizontal History + Download in Header */
@@ -150,7 +150,7 @@
             .preview-pane { 
                 position: fixed; top: 60px; left: 0; right: 0; height: 40vh; 
                 background: #2d3436; z-index: 90; padding: 0; 
-                overflow: hidden; /* Prevents preview from scrolling */
+                overflow: hidden;
             }
             #scale-wrapper { transform: scale(0.35); }
 
@@ -173,7 +173,7 @@
 
 <div class="sidebar">
     <div class="brand-header">
-        <img src="images/logo.jpg" style="width:90%";>
+        <img src="images/logo.jpg" style="width:90%;">
         <p>News Poster Editor</p>
         
         <div class="mobile-header-controls">
@@ -202,7 +202,7 @@
 
     <div class="tabs">
         <button class="tab-btn active" onclick="openTab(event, 'tab-design')">Design</button>
-        <button class="tab-btn" onclick="openTab(event, 'tab-content')">Content</button>
+        <button class="tab-btn" onclick="openTab(event, 'tab-content')">Text Align</button>
     </div>
 
     <div class="tab-content">
@@ -233,7 +233,7 @@
         <div id="tab-content" class="tab-pane">
             <div class="section-title">Visual Tweaks</div>
             <div class="input-group slider-card">
-                <label>Line Height (வரி இடைவெளி)</label>
+                <label>Line Spacing (வரி இடைவெளி)</label>
                 <input type="range" id="in-lineheight" class="slider" min="1" max="2.5" step="0.1" value="1.4" oninput="update()" onchange="saveHistory()">
             </div>
         </div>
@@ -288,9 +288,14 @@
 <script>
     let posX = 0, posY = 0, scale = 1;
     const wrapper = document.getElementById('scale-wrapper');
+    const previewPane = document.querySelector('.preview-pane');
     let historyStack = [];
     let redoStack = [];
     const maxHistory = 30;
+
+    // Mobile Zoom variables
+    let initialDist = 0;
+    let currentMobileScale = 1;
 
     window.onload = function() {
         const now = new Date();
@@ -392,10 +397,36 @@
 
     function responsivePreview() {
         const pane = document.querySelector('.preview-pane');
-        const scaleVal = Math.min((pane.offsetWidth * 0.95) / 800, (pane.offsetHeight * 0.95) / 800);
-        wrapper.style.transform = `scale(${scaleVal})`;
+        const baseScale = Math.min((pane.offsetWidth * 0.95) / 800, (pane.offsetHeight * 0.95) / 800);
+        // Multiply by currentMobileScale (defaults to 1 unless pinched)
+        wrapper.style.transform = `scale(${baseScale * currentMobileScale})`;
     }
     window.addEventListener('resize', responsivePreview);
+
+    // PINCH ZOOM FOR MOBILE PREVIEW
+    previewPane.addEventListener('touchstart', (e) => {
+        if (window.innerWidth <= 900 && e.touches.length === 2) {
+            initialDist = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
+        }
+    }, {passive: true});
+
+    previewPane.addEventListener('touchmove', (e) => {
+        if (window.innerWidth <= 900 && e.touches.length === 2) {
+            e.preventDefault();
+            const dist = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
+            
+            const zoomFactor = dist / initialDist;
+            currentMobileScale = Math.min(Math.max(currentMobileScale * zoomFactor, 0.5), 4);
+            initialDist = dist;
+            responsivePreview();
+        }
+    }, {passive: false});
 
     function loadTemplate(input) {
         if (input.files && input.files[0]) {
@@ -428,13 +459,13 @@
     let isDragging = false, startX, startY;
     
     const startDrag = (e) => {
-        if(e.target.contentEditable === "true") return; 
+        if(e.target.contentEditable === "true" || (e.touches && e.touches.length > 1)) return; 
         isDragging = true;
         const c = e.touches ? e.touches[0] : e;
         startX = c.clientX - posX; startY = c.clientY - posY;
     };
     const moveDrag = (e) => {
-        if (!isDragging) return;
+        if (!isDragging || (e.touches && e.touches.length > 1)) return;
         const c = e.touches ? e.touches[0] : e;
         posX = c.clientX - startX; posY = c.clientY - startY;
         adjustImage();
