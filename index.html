@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sakkaraviyugam - News Poster Editor Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Arima:wght@700&family=Hind+Madurai:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root { 
+            --brand: #ff0000; 
+            --accent-blue: #0056b3;
+            --bg: #f0f2f5;
+            --card: #ffffff;
+            --text: #1c1e21;
+            --sep: #e0e0e0;
+            /* Defined Tamil News Font Stack */
+            --news-font: 'Hind Madurai', 'Segoe UI', sans-serif;
+        }
+        
+        body { 
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+            margin: 0; background: var(--bg); color: var(--text); 
+            display: flex; height: 100vh; overflow: hidden;
+        }
+
+        /* Sidebar & Tabs */
+        .sidebar { 
+            width: 400px; background: var(--card); display: flex; flex-direction: column;
+            box-shadow: 2px 0 12px rgba(0,0,0,0.1); z-index: 20;
+        }
+        .brand-header { padding: 20px 20px 10px 20px; text-align: center; position: relative; }
+        .brand-header h1 { margin: 0; color: var(--brand); font-size: 24px; letter-spacing: 1px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+        .brand-header p { margin: 2px 0 0 0; font-size: 11px; text-transform: uppercase; color: #65676b; font-weight: bold; letter-spacing: 2px; }
+
+        .history-controls { display: flex; gap: 10px; padding: 0 20px 15px; border-bottom: 1px solid #eee; }
+        .btn-hist { 
+            flex: 1; padding: 8px; font-size: 11px; background: #f0f2f5; 
+            border: 1px solid #ddd; border-radius: 6px; cursor: pointer; 
+            font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 5px;
+            transition: all 0.2s;
+        }
+        .btn-hist:hover:not(:disabled) { background: #e4e6eb; }
+        .btn-hist:disabled { opacity: 0.3; cursor: not-allowed; }
+        .btn-hist svg { width: 14px; height: 14px; fill: currentColor; }
+
+        .tabs { display: flex; border-bottom: 1px solid #ddd; background: #fcfcfc; }
+        .tab-btn { flex: 1; padding: 14px; border: none; background: none; cursor: pointer; font-weight: bold; color: #65676b; border-bottom: 3px solid transparent; transition: 0.3s; }
+        .tab-btn.active { color: var(--brand); border-bottom-color: var(--brand); background: white; }
+        
+        .tab-content { padding: 20px; overflow-y: auto; flex-grow: 1; }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+
+        /* Form Styling */
+        .section-title { font-size: 12px; color: var(--brand); text-transform: uppercase; font-weight: 800; margin-bottom: 15px; border-left: 3px solid var(--brand); padding-left: 8px; }
+        .input-group { margin-bottom: 18px; }
+        label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; color: #444; }
+        input[type="text"], textarea { width: 100%; padding: 11px; border: 1px solid #ced4da; border-radius: 8px; font-size: 14px; box-sizing: border-box; background: #f9f9f9; font-family: var(--news-font); }
+        input:focus { outline: none; border-color: var(--brand); background: white; }
+
+        .slider-card { background: #f8f9fa; padding: 15px; border-radius: 10px; border: 1px solid #eee; }
+        .slider { -webkit-appearance: none; width: 100%; height: 5px; background: #dfe3e8; border-radius: 10px; outline: none; margin: 10px 0; }
+        .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: var(--brand); border-radius: 50%; cursor: pointer; border: 3px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+
+        /* Preview Area */
+        .preview-pane { flex-grow: 1; display: flex; justify-content: center; align-items: center; background: #cbd5e0; padding: 20px; }
+        #scale-wrapper { transform: scale(0.6); transform-origin: center; transition: transform 0.3s ease; }
+        
+        #poster-canvas {
+            width: 800px; height: 800px; background: #fff; position: relative; 
+            overflow: hidden; box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+            /* Apply Tamil News font to entire canvas */
+            font-family: var(--news-font);
+        }
+
+        /* Background Texture */
+        .paper-texture { position: absolute; inset: 0; opacity: 0.05; pointer-events: none; z-index: 2; background-image: url("https://www.transparenttextures.com/patterns/graphy.png"); }
+        #bg-layer { position: absolute; inset: 0; width: 800px; height: 800px; object-fit: fill; z-index: 1; }
+
+        /* Dot design in the Breaking News Tag */
+        .dot-design{ width: 10px; height: 10px; background-color: white; border-radius: 50%; position: absolute; top: 72px; left:250px; z-index: 1; }
+
+        /* Frames & Meta */
+        .top-separator { position: absolute; top: 115px; left: 30px; right: 30px; height: 1px; background: var(--sep); z-index: 5; }
+        .meta-bar {
+            position: absolute; top: 115px; left: 30px; right: 30px; height: 50px;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 6; font-weight: 700; font-size: 20px; color: #222;
+        }
+        .meta-item { display: flex; align-items: center; gap: 8px; }
+        .meta-icon { width: 20px; height: 20px; fill: var(--brand); }
+        
+        .blue-line { position: absolute; top: 155px; left: 30px; right: 30px; height: 2px; background: rgb(19, 36, 133); z-index: 6; }
+        .bottom-separator { position: absolute; bottom: 75px; left: 30px; right: 30px; height: 1px; background: var(--sep); z-index: 5; }
+
+        /* Soft Content Frame */
+        .content-frame {
+            position: absolute; top: 165px; bottom: 90px; left: 30px; right: 30px;
+            border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; pointer-events: none; z-index: 3;
+            background: rgba(255,255,255,0.2);
+        }
+
+        .main-content-area {
+            position: absolute; top: 170px; width: 720px; height: 540px; left: 40px;
+            display: flex; flex-direction: column; align-items: center; z-index: 4;
+        }
+
+        .dyn-img-box { width: 100%; overflow: hidden; cursor: grab; display: flex; justify-content: center; border-radius: 4px; }
+        #view-img { position: relative; transform-origin: center; }
+        .divider-line { width: 95%; height: 2px; background: var(--brand); margin: 15px 0; display: none; }
+        .text-wrap { flex-grow: 1; display: flex; align-items: center; justify-content: center; padding: 10px; text-align: center; overflow: hidden; width: 100%; }
+        .dyn-text { font-weight: 700; color: #000; width: 100%; word-wrap: break-word; letter-spacing: -0.5px; }
+
+        /* Footer */
+        .footer-container { 
+            position: absolute; bottom: 0; width: 100%; height: 75px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 0 45px; box-sizing: border-box; z-index: 5; 
+        }
+        .footer-left, .footer-right { color: white; font-weight: 700; font-size: 19px; width: 35%; text-align: center; line-height: 1.2; }
+
+        .btn-stack { padding: 20px; background: white; border-top: 1px solid #eee; display: flex; gap: 10px; }
+        .btn { flex: 1; padding: 16px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-save { background: var(--brand); color: white; box-shadow: 0 4px 12px rgba(255,0,0,0.2); }
+        .btn-reset { background: #f0f2f5; color: #444; }
+        .btn:active { transform: scale(0.98); }
+
+        @media (max-width: 900px) {
+            body { flex-direction: column; overflow-y: auto; height: auto; }
+            .sidebar { width: 100%; height: auto; order: 2; }
+            .preview-pane { width: 100%; height: 50vh; order: 1; position: sticky; top: 0; background: #333; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="brand-header">
+        <img src="logo.jpg" style="width: 90%;" onerror="this.style.display='none'">
+        <p>News Poster Editor</p>
+    </div>
+
+    <div class="history-controls">
+        <button class="btn-hist" id="undo-btn" onclick="undo()" disabled title="Undo">
+            <svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
+            UNDO
+        </button>
+        <button class="btn-hist" id="redo-btn" onclick="redo()" disabled title="Redo">
+            <svg viewBox="0 0 24 24"><path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg>
+            REDO
+        </button>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="openTab(event, 'tab-design')">Design</button>
+        <button class="tab-btn" onclick="openTab(event, 'tab-content')">Content</button>
+    </div>
+
+    <div class="tab-content">
+        <div id="tab-design" class="tab-pane active">
+            <div class="section-title">Visual Elements</div>
+            <div class="input-group">
+                <label>1. Poster Template (பின்னணி)</label>
+                <input type="file" id="template-file" accept="image/*" onchange="loadTemplate(this)">
+            </div>
+            <div class="input-group">
+                <label>2. Main Photo (படம்)</label>
+                <input type="file" id="image-file" accept="image/*" onchange="loadImage(this)">
+            </div>
+            
+            <div id="image-adjustments" class="slider-card" style="display:none;">
+                <div class="section-title" style="border:none; padding:0; margin-bottom:10px;">Photo Controls</div>
+                <label>Width Scaling</label>
+                <input type="range" id="in-width" class="slider" min="10" max="100" value="95" oninput="adjustImage()" onchange="saveHistory()">
+                <label>Frame Height</label>
+                <input type="range" id="in-height" class="slider" min="50" max="450" value="320" oninput="adjustImage()" onchange="saveHistory()">
+                <label>Side Cropping</label>
+                <input type="range" id="in-crop" class="slider" min="0" max="45" value="0" oninput="adjustImage()" onchange="saveHistory()">
+                <label>Photo Zoom</label>
+                <input type="range" id="in-zoom" class="slider" min="0.5" max="3" step="0.05" value="1" oninput="adjustImage()" onchange="saveHistory()">
+                <p style="font-size:11px; color:#888; margin:5px 0 0 0;">💡 Drag the photo in preview to reposition</p>
+            </div>
+        </div>
+
+        <div id="tab-content" class="tab-pane">
+            <div class="section-title">Metadata</div>
+            <div class="input-group">
+                <label>Location (இடம்)</label>
+                <input type="text" id="in-loc" value="சென்னை" oninput="update()" onblur="saveHistory()">
+            </div>
+            <div class="input-group">
+                <label>Date (தேதி)</label>
+                <input type="text" id="in-date" value="" oninput="update()" onblur="saveHistory()">
+            </div>
+
+            <div class="section-title">News Body</div>
+            <div class="input-group">
+                <label>Headline/Detail (செய்தி விவரம்)</label>
+                <textarea id="in-content" oninput="update()" onblur="saveHistory()" rows="5">உங்கள் செய்தியை இங்கே பதிவிடவும்...</textarea>
+            </div>
+            <div class="input-group slider-card">
+                <label>Line Height (வரி இடைவெளி)</label>
+                <input type="range" id="in-lineheight" class="slider" min="1" max="2.5" step="0.1" value="1.4" oninput="update()" onchange="saveHistory()">
+            </div>
+
+            <div class="section-title">Reporter Info</div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="input-group">
+                    <label>Designation</label>
+                    <input type="text" id="in-desig" value="செய்தியாளர்" oninput="update()" onblur="saveHistory()">
+                </div>
+                <div class="input-group">
+                    <label>Name</label>
+                    <input type="text" id="in-name" value="பெயர்" oninput="update()" onblur="saveHistory()">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="btn-stack">
+        <button class="btn btn-reset" onclick="location.reload()">RESET</button>
+        <button class="btn btn-save" id="save-btn" onclick="saveAsImage()">DOWNLOAD POSTER</button>
+    </div>
+</div>
+
+<div class="preview-pane">
+    <div id="scale-wrapper">
+        <div id="poster-canvas">
+            <img id="bg-layer" src="">
+            <div class="paper-texture"></div>
+            <div class="content-frame"></div>
+            
+            <div class="dot-design"></div>
+            <div class="top-separator"></div>
+            <div class="meta-bar">
+                <div class="meta-item">
+                    <svg class="meta-icon" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                    <span id="view-loc">சென்னை</span>
+                </div>
+                <div class="meta-item">
+                    <svg class="meta-icon" viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+                    <span id="view-date"></span>
+                </div>
+            </div>
+            <div class="blue-line"></div>
+            <div class="bottom-separator"></div>
+
+            <div class="main-content-area">
+                <div class="dyn-img-box" id="img-box">
+                    <img id="view-img" src="" style="display:none;">
+                </div>
+                <div class="divider-line" id="red-line"></div>
+                <div class="text-wrap" id="text-wrap-div">
+                    <div class="dyn-text" id="view-text"></div>
+                </div>
+            </div>
+
+            <div class="footer-container">
+                <div class="footer-left" id="view-desig"></div>
+                <div class="footer-right" id="view-name"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let posX = 0, posY = 0, scale = 1;
+    const wrapper = document.getElementById('scale-wrapper');
+    let historyStack = [];
+    let redoStack = [];
+    const maxHistory = 30;
+
+    window.onload = function() {
+        const now = new Date();
+        const d = String(now.getDate()).padStart(2, '0');
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const y = now.getFullYear();
+        document.getElementById('in-date').value = `${d}.${m}.${y}`;
+        update();
+        saveHistory(); // Capture initial state
+    };
+
+    function getState() {
+        return JSON.stringify({
+            loc: document.getElementById('in-loc').value,
+            date: document.getElementById('in-date').value,
+            content: document.getElementById('in-content').value,
+            desig: document.getElementById('in-desig').value,
+            name: document.getElementById('in-name').value,
+            lh: document.getElementById('in-lineheight').value,
+            w: document.getElementById('in-width').value,
+            h: document.getElementById('in-height').value,
+            c: document.getElementById('in-crop').value,
+            z: document.getElementById('in-zoom').value,
+            px: posX, 
+            py: posY,
+            bgSrc: document.getElementById('bg-layer').src,
+            imgSrc: document.getElementById('view-img').src,
+            imgVisible: document.getElementById('view-img').style.display
+        });
+    }
+
+    function saveHistory() {
+        const current = getState();
+        // Don't save if state is identical to last
+        if (historyStack.length > 0 && historyStack[historyStack.length - 1] === current) return;
+        
+        historyStack.push(current);
+        if (historyStack.length > maxHistory) historyStack.shift();
+        
+        redoStack = []; // Clear redo when new action occurs
+        updateHistoryButtons();
+    }
+
+    function undo() {
+        if (historyStack.length <= 1) return;
+        
+        const currentState = historyStack.pop();
+        redoStack.push(currentState);
+        
+        const prevState = historyStack[historyStack.length - 1];
+        applyState(prevState);
+    }
+
+    function redo() {
+        if (redoStack.length === 0) return;
+        
+        const nextState = redoStack.pop();
+        historyStack.push(nextState);
+        
+        applyState(nextState);
+    }
+
+    function applyState(stateStr) {
+        const s = JSON.parse(stateStr);
+        
+        // Restore Inputs
+        document.getElementById('in-loc').value = s.loc;
+        document.getElementById('in-date').value = s.date;
+        document.getElementById('in-content').value = s.content;
+        document.getElementById('in-desig').value = s.desig;
+        document.getElementById('in-name').value = s.name;
+        document.getElementById('in-lineheight').value = s.lh;
+        document.getElementById('in-width').value = s.w;
+        document.getElementById('in-height').value = s.h;
+        document.getElementById('in-crop').value = s.c;
+        document.getElementById('in-zoom').value = s.z;
+        
+        // Restore Image Params
+        posX = s.px; 
+        posY = s.py;
+        
+        // Restore Image Sources
+        document.getElementById('bg-layer').src = s.bgSrc || "";
+        const viewImg = document.getElementById('view-img');
+        viewImg.src = s.imgSrc || "";
+        viewImg.style.display = s.imgVisible;
+        
+        if(s.imgVisible === 'block') {
+            document.getElementById('red-line').style.display = 'block';
+            document.getElementById('image-adjustments').style.display = 'block';
+        }
+
+        update();
+        adjustImage();
+        updateHistoryButtons();
+    }
+
+    function updateHistoryButtons() {
+        document.getElementById('undo-btn').disabled = historyStack.length <= 1;
+        document.getElementById('redo-btn').disabled = redoStack.length === 0;
+    }
+
+    function openTab(evt, tabName) {
+        let panes = document.getElementsByClassName("tab-pane");
+        for (let p of panes) p.classList.remove("active");
+        let btns = document.getElementsByClassName("tab-btn");
+        for (let b of btns) b.classList.remove("active");
+        document.getElementById(tabName).classList.add("active");
+        evt.currentTarget.classList.add("active");
+    }
+
+    function responsivePreview() {
+        const pane = document.querySelector('.preview-pane');
+        const scaleVal = Math.min((pane.offsetWidth * 0.9) / 800, (pane.offsetHeight * 0.9) / 800);
+        wrapper.style.transform = `scale(${scaleVal})`;
+    }
+    window.addEventListener('resize', responsivePreview);
+    setTimeout(responsivePreview, 100);
+
+    function loadTemplate(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('bg-layer').src = e.target.result;
+                saveHistory();
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function loadImage(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = document.getElementById('view-img');
+                img.src = e.target.result;
+                img.style.display = 'block';
+                document.getElementById('red-line').style.display = 'block';
+                document.getElementById('image-adjustments').style.display = 'block';
+                adjustImage();
+                saveHistory();
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    const imgBox = document.getElementById('img-box');
+    let isDragging = false, startX, startY;
+    
+    const startDrag = (e) => {
+        isDragging = true;
+        const c = e.touches ? e.touches[0] : e;
+        startX = c.clientX - posX; startY = c.clientY - posY;
+    };
+    const moveDrag = (e) => {
+        if (!isDragging) return;
+        const c = e.touches ? e.touches[0] : e;
+        posX = c.clientX - startX; posY = c.clientY - startY;
+        adjustImage();
+    };
+    imgBox.addEventListener('mousedown', startDrag);
+    imgBox.addEventListener('touchstart', startDrag);
+    window.addEventListener('mousemove', moveDrag);
+    window.addEventListener('touchmove', moveDrag, {passive: false});
+    window.addEventListener('mouseup', () => { 
+        if(isDragging) saveHistory(); 
+        isDragging = false; 
+    });
+    window.addEventListener('touchend', () => { 
+        if(isDragging) saveHistory(); 
+        isDragging = false; 
+    });
+
+    function adjustImage() {
+        const img = document.getElementById('view-img');
+        const w = document.getElementById('in-width').value;
+        const h = document.getElementById('in-height').value;
+        const crop = document.getElementById('in-crop').value;
+        scale = document.getElementById('in-zoom').value;
+        img.style.width = w + "%";
+        img.style.height = h + "px";
+        img.style.clipPath = `inset(0% ${crop}% 0% ${crop}%)`;
+        img.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
+        autoSizeText();
+    }
+
+    function update() {
+        document.getElementById('view-loc').innerText = document.getElementById('in-loc').value;
+        document.getElementById('view-date').innerText = document.getElementById('in-date').value;
+        document.getElementById('view-text').innerText = document.getElementById('in-content').value;
+        document.getElementById('view-desig').innerText = document.getElementById('in-desig').value;
+        document.getElementById('view-name').innerText = document.getElementById('in-name').value;
+        document.getElementById('view-text').style.lineHeight = document.getElementById('in-lineheight').value;
+        autoSizeText();
+    }
+
+    function autoSizeText() {
+        const textEl = document.getElementById('view-text');
+        const wrapEl = document.getElementById('text-wrap-div');
+        let fontSize = 32;
+        textEl.style.fontSize = fontSize + "px";
+        while (textEl.scrollHeight > wrapEl.clientHeight && fontSize > 14) {
+            fontSize--;
+            textEl.style.fontSize = fontSize + "px";
+        }
+    }
+
+    async function saveAsImage() {
+        if (!document.getElementById('bg-layer').src) return alert("Please select a template first!");
+        const btn = document.getElementById('save-btn');
+        btn.innerText = "Processing...";
+        const canvasWrapper = document.getElementById('scale-wrapper');
+        const originalTransform = canvasWrapper.style.transform;
+        canvasWrapper.style.transform = 'none';
+
+        try {
+            const canvas = await html2canvas(document.getElementById('poster-canvas'), {
+                scale: 2, useCORS: true, width: 800, height: 800
+            });
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = `News_${Date.now()}.png`;
+            link.click();
+        } catch (e) { console.error(e); }
+        canvasWrapper.style.transform = originalTransform;
+        btn.innerText = "DOWNLOAD POSTER";
+    }
+</script>
+</body>
+</html>
