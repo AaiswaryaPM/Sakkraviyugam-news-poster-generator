@@ -2,7 +2,7 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sakkaraviyugam - News Poster Editor Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Arima:wght@700&family=Hind+Madurai:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -14,7 +14,6 @@
             --card: #ffffff;
             --text: #1c1e21;
             --sep: #e0e0e0;
-            /* Defined Tamil News Font Stack */
             --news-font: 'Hind Madurai', 'Segoe UI', sans-serif;
         }
         
@@ -31,7 +30,6 @@
         }
         .brand-header { padding: 20px 20px 10px 20px; text-align: center; position: relative; }
         .brand-header h1 { margin: 0; color: var(--brand); font-size: 24px; letter-spacing: 1px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-
         .brand-header p { margin: 2px 0 0 0; font-size: 11px; text-transform: uppercase; color: #65676b; font-weight: bold; letter-spacing: 2px; }
 
         .history-controls { display: flex; gap: 10px; padding: 0 20px 15px; border-bottom: 1px solid #eee; }
@@ -62,27 +60,22 @@
 
         .slider-card { background: #f8f9fa; padding: 15px; border-radius: 10px; border: 1px solid #eee; }
         .slider { -webkit-appearance: none; width: 100%; height: 5px; background: #dfe3e8; border-radius: 10px; outline: none; margin: 10px 0; }
-        .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: var(--brand); border-radius: 50%; cursor: pointer; border: 3px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; background: var(--brand); border-radius: 50%; cursor: pointer; border: 3px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
         /* Preview Area */
-        .preview-pane { flex-grow: 1; display: flex; justify-content: center; align-items: center; background: #cbd5e0; padding: 20px; }
-        #scale-wrapper { transform: scale(0.6); transform-origin: center; transition: transform 0.3s ease; }
+        .preview-pane { flex-grow: 1; display: flex; justify-content: center; align-items: center; background: #cbd5e0; padding: 20px; position: relative; overflow: hidden; }
+        #scale-wrapper { transform-origin: center; transition: transform 0.1s ease; will-change: transform; }
         
         #poster-canvas {
             width: 800px; height: 800px; background: #fff; position: relative; 
             overflow: hidden; box-shadow: 0 15px 50px rgba(0,0,0,0.3);
-            /* Apply Tamil News font to entire canvas */
             font-family: var(--news-font);
         }
 
-        /* Background Texture */
         .paper-texture { position: absolute; inset: 0; opacity: 0.05; pointer-events: none; z-index: 2; background-image: url("https://www.transparenttextures.com/patterns/graphy.png"); }
         #bg-layer { position: absolute; inset: 0; width: 800px; height: 800px; object-fit: fill; z-index: 1; }
-
-        /* Dot design in the Breaking News Tag */
         .dot-design{ width: 10px; height: 10px; background-color: white; border-radius: 50%; position: absolute; top: 72px; left:250px; z-index: 1; }
 
-        /* Frames & Meta */
         .top-separator { position: absolute; top: 115px; left: 30px; right: 30px; height: 1px; background: var(--sep); z-index: 5; }
         .meta-bar {
             position: absolute; top: 115px; left: 30px; right: 30px; height: 50px;
@@ -95,7 +88,6 @@
         .blue-line { position: absolute; top: 155px; left: 30px; right: 30px; height: 2px; background: rgb(19, 36, 133); z-index: 6; }
         .bottom-separator { position: absolute; bottom: 75px; left: 30px; right: 30px; height: 1px; background: var(--sep); z-index: 5; }
 
-        /* Soft Content Frame */
         .content-frame {
             position: absolute; top: 165px; bottom: 90px; left: 30px; right: 30px;
             border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; pointer-events: none; z-index: 3;
@@ -107,13 +99,12 @@
             display: flex; flex-direction: column; align-items: center; z-index: 4;
         }
 
-        .dyn-img-box { width: 100%; overflow: hidden; cursor: grab; display: flex; justify-content: center; border-radius: 4px; }
+        .dyn-img-box { width: 100%; overflow: hidden; cursor: grab; display: flex; justify-content: center; border-radius: 4px; touch-action: none; }
         #view-img { position: relative; transform-origin: center; }
         .divider-line { width: 95%; height: 2px; background: var(--brand); margin: 15px 0; display: none; }
         .text-wrap { flex-grow: 1; display: flex; align-items: center; justify-content: center; padding: 10px; text-align: center; overflow: hidden; width: 100%; }
         .dyn-text { font-weight: 700; color: #000; width: 100%; word-wrap: break-word; letter-spacing: -0.5px; }
 
-        /* Footer */
         .footer-container { 
             position: absolute; bottom: 0; width: 100%; height: 75px; 
             display: flex; justify-content: space-between; align-items: center; 
@@ -122,15 +113,31 @@
         .footer-left, .footer-right { color: white; font-weight: 700; font-size: 19px; width: 35%; text-align: center; line-height: 1.2; }
 
         .btn-stack { padding: 20px; background: white; border-top: 1px solid #eee; display: flex; gap: 10px; }
-        .btn { flex: 1; padding: 16px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn { flex: 1; padding: 10px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 13px; }
         .btn-save { background: var(--brand); color: white; box-shadow: 0 4px 12px rgba(255,0,0,0.2); }
         .btn-reset { background: #f0f2f5; color: #444; }
         .btn:active { transform: scale(0.98); }
 
+        /* Mobile Responsiveness */
         @media (max-width: 900px) {
             body { flex-direction: column; overflow-y: auto; height: auto; }
-            .sidebar { width: 100%; height: auto; order: 2; }
-            .preview-pane { width: 100%; height: 50vh; order: 1; position: sticky; top: 0; background: #333; }
+            .sidebar { width: 100%; height: auto; order: 2; box-shadow: 0 -4px 12px rgba(0,0,0,0.1); }
+            .preview-pane { 
+                width: 100%; 
+                height: 60vh; 
+                min-height: 400px;
+                order: 1; 
+                position: sticky; 
+                top: 0; 
+                background: #2d3436; 
+                z-index: 30;
+                padding: 10px;
+                box-sizing: border-box;
+            }
+            #scale-wrapper { transform: scale(0.4); } /* Managed by JS */
+            .brand-header { padding: 10px; }
+            .brand-header img { width: 150px !important; }
+            .btn-stack { position: sticky; bottom: 0; z-index: 40; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
         }
     </style>
 </head>
@@ -138,7 +145,7 @@
 
 <div class="sidebar">
     <div class="brand-header">
-        <img src="logo.jpg" style="width: 90%;" onerror="this.style.display='none'">
+        <img src="images\logo.jpg" style="width: 90%;">
         <p>News Poster Editor</p>
     </div>
 
@@ -279,7 +286,8 @@
         const y = now.getFullYear();
         document.getElementById('in-date').value = `${d}.${m}.${y}`;
         update();
-        saveHistory(); // Capture initial state
+        saveHistory();
+        responsivePreview();
     };
 
     function getState() {
@@ -304,39 +312,30 @@
 
     function saveHistory() {
         const current = getState();
-        // Don't save if state is identical to last
         if (historyStack.length > 0 && historyStack[historyStack.length - 1] === current) return;
-        
         historyStack.push(current);
         if (historyStack.length > maxHistory) historyStack.shift();
-        
-        redoStack = []; // Clear redo when new action occurs
+        redoStack = [];
         updateHistoryButtons();
     }
 
     function undo() {
         if (historyStack.length <= 1) return;
-        
         const currentState = historyStack.pop();
         redoStack.push(currentState);
-        
         const prevState = historyStack[historyStack.length - 1];
         applyState(prevState);
     }
 
     function redo() {
         if (redoStack.length === 0) return;
-        
         const nextState = redoStack.pop();
         historyStack.push(nextState);
-        
         applyState(nextState);
     }
 
     function applyState(stateStr) {
         const s = JSON.parse(stateStr);
-        
-        // Restore Inputs
         document.getElementById('in-loc').value = s.loc;
         document.getElementById('in-date').value = s.date;
         document.getElementById('in-content').value = s.content;
@@ -347,22 +346,16 @@
         document.getElementById('in-height').value = s.h;
         document.getElementById('in-crop').value = s.c;
         document.getElementById('in-zoom').value = s.z;
-        
-        // Restore Image Params
         posX = s.px; 
         posY = s.py;
-        
-        // Restore Image Sources
         document.getElementById('bg-layer').src = s.bgSrc || "";
         const viewImg = document.getElementById('view-img');
         viewImg.src = s.imgSrc || "";
         viewImg.style.display = s.imgVisible;
-        
         if(s.imgVisible === 'block') {
             document.getElementById('red-line').style.display = 'block';
             document.getElementById('image-adjustments').style.display = 'block';
         }
-
         update();
         adjustImage();
         updateHistoryButtons();
@@ -384,11 +377,10 @@
 
     function responsivePreview() {
         const pane = document.querySelector('.preview-pane');
-        const scaleVal = Math.min((pane.offsetWidth * 0.9) / 800, (pane.offsetHeight * 0.9) / 800);
+        const scaleVal = Math.min((pane.offsetWidth * 0.95) / 800, (pane.offsetHeight * 0.95) / 800);
         wrapper.style.transform = `scale(${scaleVal})`;
     }
     window.addEventListener('resize', responsivePreview);
-    setTimeout(responsivePreview, 100);
 
     function loadTemplate(input) {
         if (input.files && input.files[0]) {
@@ -435,14 +427,8 @@
     imgBox.addEventListener('touchstart', startDrag);
     window.addEventListener('mousemove', moveDrag);
     window.addEventListener('touchmove', moveDrag, {passive: false});
-    window.addEventListener('mouseup', () => { 
-        if(isDragging) saveHistory(); 
-        isDragging = false; 
-    });
-    window.addEventListener('touchend', () => { 
-        if(isDragging) saveHistory(); 
-        isDragging = false; 
-    });
+    window.addEventListener('mouseup', () => { if(isDragging) saveHistory(); isDragging = false; });
+    window.addEventListener('touchend', () => { if(isDragging) saveHistory(); isDragging = false; });
 
     function adjustImage() {
         const img = document.getElementById('view-img');
