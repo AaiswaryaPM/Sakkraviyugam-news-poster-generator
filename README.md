@@ -34,6 +34,8 @@ https://aaiswaryapm.github.io/Sakkraviyugam-news-poster-generator
 ## 📂 Project Structure
 ```
 ├── images/
-│   └── logo.jpg        # Branding for the newspaper
-├── index.html          # Main application structure & CSS & JS
-└── README.md           # Project documentation
+│   └── logo.jpg        
+├── index.html
+├── style.css 
+├── script.js
+└── README.md
