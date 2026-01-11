@@ -1,236 +1,282 @@
-let selected = {college:'',  name:'', date:'', loc:'' };
+let posX = 0, posY = 0, scale = 1;
+const wrapper = document.getElementById('scale-wrapper');
+const previewPane = document.querySelector('.preview-pane');
+let historyStack = [];
+let redoStack = [];
+const maxHistory = 30;
 
-function showNotification() {
-    const notify = document.getElementById('notification');
-    notify.classList.add('show');
-    setTimeout(() => {
-    notify.classList.remove('show');
-    }, 3000);
-}
+// Mobile Preview Navigation State
+let mobileZoom = 1;
+let mobilePanX = 0;
+let mobilePanY = 0;
+let initialDist = 0;
+let lastTouchX = 0;
+let lastTouchY = 0;
 
-function sortEvents() {
-    const list = document.getElementById('event-list');
-    const order = document.getElementById('sort-select').value;
-    const cards = Array.from(list.getElementsByClassName('event-card'));
+window.onload = function() {
+    const now = new Date();
+    const d = String(now.getDate()).padStart(2, '0');
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const y = now.getFullYear();
+    document.getElementById('view-date').innerText = `${d}.${m}.${y}`;
+    update();
+    saveHistory();
+    responsivePreview();
+};
 
-    if (order === 'none') return;
-
-    cards.sort((a, b) => {
-    const dateA = new Date(a.getAttribute('data-date'));
-    const dateB = new Date(b.getAttribute('data-date'));
-    return order === 'asc' ? dateA - dateB : dateB - dateA;
-    });
-
-    list.innerHTML = '';
-    cards.forEach(card => list.appendChild(card));
-}
-
-function openRegister(college, name, date, loc){
-    selected = {college, name, date, loc };
-    document.getElementById('modal-title').innerText = 'Register — ' + name;
-    document.getElementById('modal-sub').innerText = date + ' • ' + college + ' • ' + loc;
-    document.getElementById('modal-sub').style.color="#000";
-    document.getElementById('input-name').value = '';
-    document.getElementById('input-email').value = '';
-    document.getElementById('modal').style.display = 'flex';
-    document.getElementById('modal').setAttribute('aria-hidden','false');
-    document.getElementById('input-name').focus();
-}
-
-function closeModal(){
-    document.getElementById('modal').style.display = 'none';
-    document.getElementById('modal').setAttribute('aria-hidden','true');
-}
-
-function viewDetails(name, date, place, desc, guest, time) {
-    document.getElementById('det-title').innerText = name;
-    document.getElementById('det-date').innerText = date;
-    document.getElementById('det-place').innerText = place;
-    document.getElementById('det-desc').innerText = desc;
-    document.getElementById('det-guest').innerText = guest;
-    document.getElementById('det-time').innerText = time;
-    
-    document.getElementById('details-modal').style.display = 'flex';
-    document.getElementById('details-modal').setAttribute('aria-hidden','false');
-}
-
-function closeDetails() {
-    document.getElementById('details-modal').style.display = 'none';
-    document.getElementById('details-modal').setAttribute('aria-hidden','true');
-}
-
-function genTicketId(){
-    const rand = Math.floor(Math.random()*90000)+10000;
-    return 'TKT-' + rand;
-}
-
-async function submitRegistration(){
-    const name = document.getElementById('input-name').value.trim();
-    const email = document.getElementById('input-email').value.trim();
-    
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if(!name) return alert('Please enter your full name.');
-    if(!email) return alert('Please enter your email address.');
-    if(!emailRegex.test(email)) {
-    return alert('⚠️ WARNING: Invalid Email Format\n\nPlease enter a valid email address.');
-    }
-
-    const ticketId = genTicketId();
-    document.getElementById('tp-college').innerText = selected.college;
-    document.getElementById('tp-event').innerText = selected.name;
-    document.getElementById('tp-name').innerText = 'Name: ' + name;
-    document.getElementById('tp-email').innerText = 'Email: ' + email;
-    document.getElementById('tp-id').innerText = 'Ticket ID: ' + ticketId;
-    document.getElementById('tp-date').innerText = 'Date: ' + selected.date;
-    document.getElementById('tp-loc').innerText = 'Location: ' + selected.loc;
-
-    const qrPayload = `EVENT DETAILS\n--------------\nEvent: ${selected.name}\nInstitution: ${selected.college}\nDate: ${selected.date}\nLocation: ${selected.loc}\n\nATTENDEE INFO\n--------------\nName: ${name}\nTicket ID: ${ticketId}`;
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(qrPayload)}&format=png`;
-
-    const qrImg = document.getElementById('tp-qr-img');
-    qrImg.src = qrUrl;
-    qrImg.alt = 'QR code for ticket ' + ticketId;
-
-    const downloadBtn = document.getElementById('download-btn');
-    downloadBtn.disabled = false;
-
-    window.__currentTicket = { name, email, college: selected.college, event: selected.name, date: selected.date, loc: selected.loc, ticketId, qrUrl };
-
-    closeModal();
-    showNotification();
-    document.getElementById('ticket-preview').scrollIntoView({ behavior:'smooth' });
-}
-
-async function drawTicketPNG(ticket){
-    const W = 600, H = 350;
-    const canvas = document.createElement('canvas');
-    canvas.width = W; canvas.height = H;
-    const ctx = canvas.getContext('2d');
-
-    const gradient = ctx.createLinearGradient(0, 0, W, H);
-    gradient.addColorStop(0, "#f8fbff");
-    gradient.addColorStop(1, "#e3eeff");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0,0,W,H);
-
-    const padding = 20;
-    ctx.fillStyle = '#061428';
-    ctx.font = '700 20px Inter, "Segoe UI", system-ui, Arial';
-    ctx.fillText(ticket.college, padding, 50);
-    ctx.fillText(ticket.event, padding, 80);
-
-    ctx.font = '400 13px Inter, "Segoe UI"';
-    ctx.fillStyle = '#475569';
-    ctx.fillText(ticket.date + ' • ' + ticket.loc, padding, 100);
-
-    ctx.fillStyle = '#f1f5f9';
-    ctx.fillRect(padding, 120, W - padding*2, 1);
-
-    ctx.fillStyle = '#0f172a';
-    ctx.font = '600 15px Inter, "Segoe UI"';
-    ctx.fillText('Name :', padding, 160);
-    ctx.font = '500 15px Inter, "Segoe UI"';
-    ctx.fillText(ticket.name, padding + 120, 160);
-
-    ctx.font = '600 15px Inter, "Segoe UI"';
-    ctx.fillText('Email :', padding, 190);
-    ctx.font = '500 14px Inter, "Segoe UI"';
-    ctx.fillText(ticket.email, padding + 120, 190);
-
-    ctx.font = '600 15px Inter, "Segoe UI"';
-    ctx.fillText('Ticket ID :', padding, 220);
-    ctx.font = '700 15px Inter, "Segoe UI"';
-    ctx.fillText(ticket.ticketId, padding + 120, 220);
-
-    const qrSize = 150;
-    const qrX = W - 30 - qrSize;
-    const qrY = 100;
-
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(qrX - 6, qrY - 6, qrSize + 12, qrSize + 12);
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(qrX - 6, qrY - 6, qrSize + 12, qrSize + 12);
-
-    const img = await loadImage(ticket.qrUrl);
-    ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
-
-    // --- ADDED TEXT BELOW QR CODE ---
-    ctx.font = '600 10px Inter, "Segoe UI"';
-    ctx.fillStyle = '#1e293b';
-    ctx.textAlign = 'center';
-    ctx.fillText('Scan me to access the Event Details', qrX + (qrSize/2), qrY + qrSize + 22);
-    ctx.textAlign = 'left'; // Reset alignment for other text
-
-    ctx.font = '400 12px Inter, "Segoe UI"';
-    ctx.fillStyle = '#64748b';
-    ctx.fillText('Registered Date & Time :' + new Date().toLocaleDateString() + ' • ' + new Date().toLocaleTimeString(), padding, H - 68);
-    ctx.fillText('Show this ticket at the entrance. ID will be verified.', padding, H - 48);
-    ctx.fillText('For Enquiry : ' + selected.college.toLowerCase().replace(/\s+/g, "") + '@gmail.com', padding, H - 28);
-
-    return canvas.toDataURL('image/png');
-}
-
-function loadImage(url){
-    return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'Anonymous';
-    img.onload = ()=> resolve(img);
-    img.onerror = (e)=> {
-        const c = document.createElement('canvas'); c.width=10; c.height=10; const ctx = c.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,10,10);
-        resolve(c);
-    };
-    img.src = url;
+function getState() {
+    return JSON.stringify({
+        loc: document.getElementById('view-loc').innerText,
+        date: document.getElementById('view-date').innerText,
+        content: document.getElementById('view-text').innerText,
+        desig: document.getElementById('view-desig').innerText,
+        name: document.getElementById('view-name').innerText,
+        lh: document.getElementById('in-lineheight').value,
+        w: document.getElementById('in-width').value,
+        h: document.getElementById('in-height').value,
+        c: document.getElementById('in-crop').value,
+        z: document.getElementById('in-zoom').value,
+        px: posX, 
+        py: posY,
+        bgSrc: document.getElementById('bg-layer').src,
+        imgSrc: document.getElementById('view-img').src,
+        imgVisible: document.getElementById('view-img').style.display
     });
 }
 
-document.getElementById('download-btn').addEventListener('click', async function(){
-    const t = window.__currentTicket;
-    if(!t) return alert('No ticket to download. Generate a ticket first.');
-    try{
-    this.disabled = true;
-    this.innerText = 'Preparing...';
-    const dataUrl = await drawTicketPNG({ ticketId: t.ticketId, name: t.name, email: t.email, college:t.college, event: t.event, date: t.date, loc: t.loc, qrUrl: t.qrUrl });
-    const a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = `${t.event.replace(/\s+/g,'_')}_${t.ticketId}.png`;
-    a.click();
-    }catch(err){
-    console.error(err);
-    alert('Could not prepare ticket image.');
-    }finally{
-    this.disabled = false;
-    this.innerText = 'Download Ticket (PNG)';
-    }
-});
-
-function clearTicket(){
-    document.getElementById('tp-college').innerText = 'Institution Name';
-    document.getElementById('tp-event').innerText = 'Select an event to generate ticket';
-    document.getElementById('tp-sub').innerText = 'Participant details and ticket will appear after you register.';
-    document.getElementById('tp-name').innerText = 'Name: —';
-    document.getElementById('tp-email').innerText = 'Email: —';
-    document.getElementById('tp-id').innerText = 'Ticket ID: —';
-    document.getElementById('tp-qr-img').src = '';
-    document.getElementById('tp-date').innerText = 'Date: —';
-    document.getElementById('tp-loc').innerText = 'Location: —';
-    document.getElementById('download-btn').disabled = true;
-    window.__currentTicket = null;
+function saveHistory() {
+    const current = getState();
+    if (historyStack.length > 0 && historyStack[historyStack.length - 1] === current) return;
+    historyStack.push(current);
+    if (historyStack.length > maxHistory) historyStack.shift();
+    redoStack = [];
+    updateHistoryButtons();
 }
 
-window.addEventListener('click', function(e){
-    if(e.target.className === 'modal-back') {
-    closeModal();
-    closeDetails();
-    }
-});
+function undo() {
+    if (historyStack.length <= 1) return;
+    const currentState = historyStack.pop();
+    redoStack.push(currentState);
+    const prevState = historyStack[historyStack.length - 1];
+    applyState(prevState);
+}
 
-window.addEventListener('keydown', function(e){
-    if(e.key === 'Escape') {
-    closeModal();
-    closeDetails();
-    }
-});
+function redo() {
+    if (redoStack.length === 0) return;
+    const nextState = redoStack.pop();
+    historyStack.push(nextState);
+    applyState(nextState);
+}
 
-clearTicket();
+function applyState(stateStr) {
+    const s = JSON.parse(stateStr);
+    document.getElementById('view-loc').innerText = s.loc;
+    document.getElementById('view-date').innerText = s.date;
+    document.getElementById('view-text').innerText = s.content;
+    document.getElementById('view-desig').innerText = s.desig;
+    document.getElementById('view-name').innerText = s.name;
+    document.getElementById('in-lineheight').value = s.lh;
+    document.getElementById('in-width').value = s.w;
+    document.getElementById('in-height').value = s.h;
+    document.getElementById('in-crop').value = s.c;
+    document.getElementById('in-zoom').value = s.z;
+    posX = s.px; 
+    posY = s.py;
+    document.getElementById('bg-layer').src = s.bgSrc || "";
+    const viewImg = document.getElementById('view-img');
+    viewImg.src = s.imgSrc || "";
+    viewImg.style.display = s.imgVisible;
+    if(s.imgVisible === 'block') {
+        document.getElementById('red-line').style.display = 'block';
+        document.getElementById('image-adjustments').style.display = 'block';
+    }
+    update();
+    adjustImage();
+    updateHistoryButtons();
+}
+
+function updateHistoryButtons() {
+    const undoBtns = document.querySelectorAll('.undo-btn-shared');
+    const redoBtns = document.querySelectorAll('.redo-btn-shared');
+    undoBtns.forEach(b => b.disabled = historyStack.length <= 1);
+    redoBtns.forEach(b => b.disabled = redoStack.length === 0);
+}
+
+function openTab(evt, tabName) {
+    let panes = document.getElementsByClassName("tab-pane");
+    for (let p of panes) p.classList.remove("active");
+    let btns = document.getElementsByClassName("tab-btn");
+    for (let b of btns) b.classList.remove("active");
+    document.getElementById(tabName).classList.add("active");
+    evt.currentTarget.classList.add("active");
+}
+
+function responsivePreview() {
+    const pane = document.querySelector('.preview-pane');
+    const baseScale = Math.min((pane.offsetWidth * 0.95) / 800, (pane.offsetHeight * 0.95) / 800);
+    
+    // Apply responsive scale + user mobile zoom + user mobile panning
+    wrapper.style.transform = `scale(${baseScale * mobileZoom}) translate(${mobilePanX}px, ${mobilePanY}px)`;
+}
+window.addEventListener('resize', responsivePreview);
+
+// MOBILE PREVIEW: PINCH ZOOM + PANNING FOR THE ENTIRE PREVIEW
+previewPane.addEventListener('touchstart', (e) => {
+    if (window.innerWidth <= 900) {
+        // Check if we are touching the image drag box (don't interfere with existing image drag)
+        if (e.target.closest('#img-box')) return;
+
+        if (e.touches.length === 2) {
+            initialDist = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
+        } else if (e.touches.length === 1) {
+            lastTouchX = e.touches[0].pageX;
+            lastTouchY = e.touches[0].pageY;
+        }
+    }
+}, {passive: true});
+
+previewPane.addEventListener('touchmove', (e) => {
+    if (window.innerWidth <= 900) {
+        if (e.target.closest('#img-box')) return;
+
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            const dist = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
+            const delta = dist / initialDist;
+            mobileZoom = Math.min(Math.max(mobileZoom * delta, 0.5), 8);
+            initialDist = dist;
+            responsivePreview();
+        } else if (e.touches.length === 1 && mobileZoom > 1) {
+            // Allow panning only when zoomed in
+            const dx = (e.touches[0].pageX - lastTouchX) / mobileZoom;
+            const dy = (e.touches[0].pageY - lastTouchY) / mobileZoom;
+            mobilePanX += dx;
+            mobilePanY += dy;
+            lastTouchX = e.touches[0].pageX;
+            lastTouchY = e.touches[0].pageY;
+            responsivePreview();
+        }
+    }
+}, {passive: false});
+
+function loadTemplate(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            document.getElementById('bg-layer').src = e.target.result;
+            saveHistory();
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function loadImage(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = document.getElementById('view-img');
+            img.src = e.target.result;
+            img.style.display = 'block';
+            document.getElementById('red-line').style.display = 'block';
+            document.getElementById('image-adjustments').style.display = 'block';
+            adjustImage();
+            saveHistory();
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+const imgBox = document.getElementById('img-box');
+let isDragging = false, startX, startY;
+
+const startDrag = (e) => {
+    if(e.target.contentEditable === "true" || (e.touches && e.touches.length > 1)) return; 
+    isDragging = true;
+    const c = e.touches ? e.touches[0] : e;
+    startX = c.clientX - posX; startY = c.clientY - posY;
+};
+const moveDrag = (e) => {
+    if (!isDragging || (e.touches && e.touches.length > 1)) return;
+    const c = e.touches ? e.touches[0] : e;
+    posX = c.clientX - startX; posY = c.clientY - startY;
+    adjustImage();
+};
+imgBox.addEventListener('mousedown', startDrag);
+imgBox.addEventListener('touchstart', startDrag);
+window.addEventListener('mousemove', moveDrag);
+window.addEventListener('touchmove', moveDrag, {passive: false});
+window.addEventListener('mouseup', () => { if(isDragging) saveHistory(); isDragging = false; });
+window.addEventListener('touchend', () => { if(isDragging) saveHistory(); isDragging = false; });
+
+function adjustImage() {
+    const img = document.getElementById('view-img');
+    const w = document.getElementById('in-width').value;
+    const h = document.getElementById('in-height').value;
+    const crop = document.getElementById('in-crop').value;
+    scale = document.getElementById('in-zoom').value;
+    img.style.width = w + "%";
+    img.style.height = h + "px";
+    img.style.clipPath = `inset(0% ${crop}% 0% ${crop}%)`;
+    img.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
+    autoSizeText();
+}
+
+function update() {
+    document.getElementById('view-text').style.lineHeight = document.getElementById('in-lineheight').value;
+    autoSizeText();
+}
+
+function autoSizeText() {
+    const textEl = document.getElementById('view-text');
+    const wrapEl = document.getElementById('text-wrap-div');
+    let fontSize = 32; 
+    textEl.style.fontSize = fontSize + "px";
+    textEl.style.fontWeight = "700";
+
+    while (textEl.scrollHeight > wrapEl.clientHeight && fontSize > 14) {
+        fontSize--;
+        textEl.style.fontSize = fontSize + "px";
+    }
+}
+
+async function saveAsImage() {
+    if (!document.getElementById('bg-layer').src) return alert("Please select a template first!");
+    const btn = document.getElementById('save-btn');
+    btn.innerText = "Processing...";
+    const canvasWrapper = document.getElementById('scale-wrapper');
+    const originalTransform = canvasWrapper.style.transform;
+    
+    // Reset for high-res capture
+    canvasWrapper.style.transform = 'none';
+
+    try {
+        const canvas = await html2canvas(document.getElementById('poster-canvas'), {
+            scale: 2, useCORS: true, width: 800, height: 800
+        });
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = `News_${Date.now()}.png`;
+        link.click();
+    } catch (e) { console.error(e); }
+    
+    canvasWrapper.style.transform = originalTransform;
+    btn.innerText = "DOWNLOAD POSTER";
+}
+
+document.querySelectorAll('[contenteditable="true"]').forEach(el => {
+    el.addEventListener('blur', () => saveHistory());
+    el.addEventListener('input', () => {
+        if(el.id === 'view-text') autoSizeText();
+    });
+    el.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const text = e.clipboardData.getData('text/plain');
+        document.execCommand('insertText', false, text);
+    });
+});
